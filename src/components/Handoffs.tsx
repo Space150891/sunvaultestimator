@@ -106,7 +106,8 @@ const OPS_STATUSES: OpsStatus[] = ["Handoff Received", "Measurements Need Review
 export function OpsPanel({ p, c, upd }: { p: Project; c: Customer; upd: Upd }) {
   const last = p.proposals[p.proposals.length - 1];
   if (!last?.signature) return <p className={card}>Operations handoff opens once the proposal is signed.</p>;
-  const o = p.ops ?? { ...defaultOps(), sails: p.openings.length, wallMounts: p.openings.length * 2, poles: 0, footings: 0, hardware: "Standard mounting kit" };
+  const sum = (k: string) => p.components.filter((c) => c.kind === k).reduce((s, c) => s + c.qty, 0);
+  const o = p.ops ?? { ...defaultOps(), sails: sum("sail"), wallMounts: sum("mount"), poles: sum("pole"), footings: sum("footing"), hardware: p.components.filter((c) => c.kind === "hardware").map((c) => `${c.qty}× ${c.label}`).join(", ") };
   const set = (patch: Partial<OpsHandoff>) => upd((x) => ({ ...x, ops: { ...o, ...patch } }));
   const num = (k: "sails" | "poles" | "wallMounts" | "footings", label: string) => (
     <label className="text-sm font-medium">{label}<input type="number" min={0} className={`${input} mt-1`} value={o[k]} onChange={(e) => set({ [k]: Number(e.target.value) || 0 })} /></label>

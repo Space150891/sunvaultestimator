@@ -54,10 +54,10 @@ export function componentsOverhead(cs: Component[], book: PriceBook) {
 export function buildSnapshot(openings: Opening[], book: PriceBook, approved: number | null, components: Component[] = []): PriceSnapshot {
   const compLines = components.map((c) => {
     const { cost, formula, missing } = componentCost(c, book);
-    return { name: `${KIND_LABEL[c.kind]} — ${c.label}`, detail: formula, formula, cost, recommended: recommendedPrice(cost, book), missing };
+    return { name: `${KIND_LABEL[c.kind]} — ${c.label}`, detail: `Qty ${c.qty}${c.sqft ? ` · ${c.sqft} sq ft` : ""}${c.fabric ? ` · ${FABRICS.find((f) => f.id === c.fabric)?.label ?? ""}` : ""}${c.heightFt ? ` · ${c.heightFt} ft` : ""}`, formula, cost, recommended: recommendedPrice(cost, book), missing };
   });
   const oh = componentsOverhead(components, book);
-  if (oh) compLines.push({ name: "Equipment & travel", detail: oh.formula, formula: oh.formula, cost: round2(oh.cost), recommended: recommendedPrice(oh.cost, book), missing: false });
+  if (oh) compLines.push({ name: "Equipment & travel", detail: "Site equipment and travel", formula: oh.formula, cost: round2(oh.cost), recommended: recommendedPrice(oh.cost, book), missing: false });
   const openingLines = openings.map((o) => {
     const cost = openingCost(o, book);
     return {

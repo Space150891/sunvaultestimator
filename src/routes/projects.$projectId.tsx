@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Badge, btnOutline, btnPrimary, card, input } from "@/components/AppShell";
-import { ADDONS, FABRICS, HOUSINGS, MOTORS, SERIES, type Opening, type Option, type Project } from "@/lib/demo-data";
-import { buildSnapshot, money } from "@/lib/pricing";
+import { ADDONS, FABRICS, HOUSINGS, KIND_LABEL, MOTORS, SERIES, type Component, type ComponentKind, type Opening, type Option, type Project } from "@/lib/demo-data";
+import { buildSnapshot, componentCost, money } from "@/lib/pricing";
 import { canManage, useStore } from "@/lib/store";
 import { GhlPanel, OpsPanel } from "@/components/Handoffs";
 
@@ -29,7 +29,7 @@ function ProjectPage() {
   if (!p) return <p className={card}>Project not found. <Link to="/" className="text-primary underline">Back to projects</Link></p>;
   const c = customers.find((x) => x.id === p.customerId)!;
   const book = books.find((b) => b.id === p.priceBookId)!;
-  const live = buildSnapshot(p.openings, book, p.approvedPrice);
+  const live = buildSnapshot(p.openings, book, p.approvedPrice, p.components);
   const last = p.proposals[p.proposals.length - 1];
   const locked = !!last?.signature;
   const upd = (fn: (p: Project) => Project) => updateProject(p.id, fn);
@@ -108,6 +108,8 @@ function Estimator({ p, locked, upd, live, next }: { p: Project; locked: boolean
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
       <div className="space-y-4">
+        <ComponentsEditor p={p} locked={locked} upd={upd} />
+        <h3 className="pt-2 text-lg font-semibold">Retractable shade openings <span className="text-sm font-normal text-muted-foreground">(optional)</span></h3>
         {p.openings.map((o, i) => (
           <div key={o.id} className={`${card} space-y-4`}>
             <div className="flex items-center gap-2">
@@ -141,16 +143,74 @@ function Estimator({ p, locked, upd, live, next }: { p: Project; locked: boolean
                 })}
               </div>
             </div>
-            <div className="text-right text-sm text-muted-foreground">Opening {i + 1} recommended: <b className="text-foreground">{money(live.lines[i]?.recommended ?? 0)}</b></div>
+            <div className="text-right text-sm text-muted-foreground">Opening {i + 1} recommended: <b className="text-foreground">{money(live.lines[live.lines.length - p.openings.length + i]?.recommended ?? 0)}</b></div>
           </div>
         ))}
         {!locked && (
-          <button className={btnOutline} onClick={() => upd((x) => ({ ...x, approvedPrice: null, openings: [...x.openings, { ...(x.openings[x.openings.length - 1] as Opening), id: "o" + Date.now(), name: `Opening ${x.openings.length + 1}`, addons: [] }] }))}>
+          <button className={btnOutline} onClick={() => upd((x) => ({ ...x, approvedPrice: null, openings: [...x.openings, { ...(x.openings[x.openings.length - 1] ?? { widthIn: 144, heightIn: 96, series: "zip", fabric: "sol90", motor: "rts", housing: "square" }), id: "o" + Date.now(), name: `Opening ${x.openings.length + 1}`, addons: [] } as Opening] }))}>
             + Add opening
           </button>
         )}
       </div>
       <PriceCard live={live} next={next} />
+    </div>
+  );
+}
+
+const NEW_ITEM: Record<ComponentKind, Omit<Component, "id">> = {
+  sail: { kind: "sail", label: "Shade sail", qty: 1, sqft: 200, fabric: "sol95" },
+  pole: { kind: "pole", label: "Steel pole 4\"", qty: 1, heightFt: 12 },
+  mount: { kind: "mount", label: "Wall mount", qty: 1 },
+  footing: { kind: "footing", label: "Concrete footing", qty: 1 },
+  hardware: { kind: "hardware", label: "Turnbuckle & shackle kit", qty: 1 },
+};
+
+function ComponentsEditor({ p, locked, upd }: { p: Project; locked: boolean; upd: Upd }) {
+  const { books } = useStore();
+  const book = books.find((b) => b.id === p.priceBookId)!;
+  const set = (id: string, patch: Partial<Component>) => upd((x) => ({ ...x, approvedPrice: null, components: x.components.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+  const add = (k: ComponentKind) => upd((x) => ({ ...x, approvedPrice: null, components: [...x.components, { ...NEW_ITEM[k], id: "k" + Date.now() }] }));
+  const numIn = (c: Component, k: "qty" | "sqft" | "heightFt", label: string) => (
+    <label className="text-xs font-medium text-muted-foreground">{label}
+      <input disabled={locked} type="number" inputMode="decimal" min={0} className={`${input} mt-1`} value={c[k] ?? 0} onChange={(e) => set(c.id, { [k]: Number(e.target.value) || 0 })} />
+    </label>
+  );
+  return (
+    <div className={`${card} space-y-3`}>
+      <h3 className="text-lg font-semibold">Sails, poles, mounts, footings & hardware</h3>
+      {p.components.length === 0 && <p className="text-sm text-muted-foreground">Add the first sail to start the estimate.</p>}
+      {p.components.map((c) => {
+        const r = componentCost(c, book);
+        return (
+          <div key={c.id} className="space-y-2 rounded-lg border bg-background p-3">
+            <div className="flex items-center gap-2">
+              <span className="w-24 shrink-0 text-xs font-bold uppercase text-primary">{KIND_LABEL[c.kind]}</span>
+              <input disabled={locked} className={input} value={c.label} onChange={(e) => set(c.id, { label: e.target.value })} />
+              {!locked && <button aria-label="Remove item" className={btnOutline} onClick={() => upd((x) => ({ ...x, approvedPrice: null, components: x.components.filter((y) => y.id !== c.id) }))}>✕</button>}
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {numIn(c, "qty", "Quantity")}
+              {c.kind === "sail" && numIn(c, "sqft", "Area (sq ft)")}
+              {c.kind === "sail" && (
+                <label className="text-xs font-medium text-muted-foreground">Fabric
+                  <select disabled={locked} className={`${input} mt-1`} value={c.fabric} onChange={(e) => set(c.id, { fabric: e.target.value })}>
+                    {FABRICS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+                  </select>
+                </label>
+              )}
+              {c.kind === "pole" && numIn(c, "heightFt", "Height (ft)")}
+              <div className="col-span-2 self-end text-right text-sm sm:col-span-1 sm:col-start-4">
+                {r.missing ? <Badge tone="warn">{r.formula}</Badge> : <><div className="font-semibold">{money(r.cost)}</div><div className="text-xs text-muted-foreground">internal cost</div></>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {!locked && (
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(NEW_ITEM) as ComponentKind[]).map((k) => <button key={k} className={btnOutline} onClick={() => add(k)}>+ {KIND_LABEL[k]}</button>)}
+        </div>
+      )}
     </div>
   );
 }
@@ -176,7 +236,10 @@ function Approval({ p, locked, upd, live, role, next }: { p: Project; locked: bo
   const n = Number(val) || 0;
   const discount = live.recommended ? (live.recommended - n) / live.recommended : 0;
   const margin = n ? (n - live.internalCost) / n : 0;
-  const needsMgr = discount > DISCOUNT_LIMIT && !canManage(role as never);
+  const [pin, setPin] = useState("");
+  const [mgrOk, setMgrOk] = useState(false);
+  const needsMgr = discount > DISCOUNT_LIMIT && !canManage(role as never) && !mgrOk;
+  const missing = live.lines.some((l) => l.missing) || live.lines.length === 0;
   return (
     <div className="grid gap-5 md:grid-cols-2">
       <div className={`${card} space-y-4`}>
@@ -189,11 +252,21 @@ function Approval({ p, locked, upd, live, role, next }: { p: Project; locked: bo
           <Badge tone={discount > DISCOUNT_LIMIT ? "warn" : "muted"}>Discount {(discount * 100).toFixed(1)}%</Badge>
           <Badge tone={margin < 0.35 ? "warn" : "success"}>Margin {(margin * 100).toFixed(1)}%</Badge>
         </div>
-        {needsMgr && <p className="text-sm text-warning-foreground">Discounts over {DISCOUNT_LIMIT * 100}% need a Sales Manager. Switch role at the top to approve.</p>}
+        {needsMgr && (
+          <div className="space-y-2 rounded-md border border-warning bg-warning/10 p-3">
+            <p className="text-sm">Discounts over {DISCOUNT_LIMIT * 100}% need a Sales Manager. Hand the tablet to the manager to enter their PIN (demo PIN 1234).</p>
+            <div className="flex gap-2">
+              <input className={input} inputMode="numeric" placeholder="Manager PIN" value={pin} onChange={(e) => setPin(e.target.value)} />
+              <button className={btnOutline} disabled={pin !== "1234"} onClick={() => setMgrOk(true)}>Authorise</button>
+            </div>
+          </div>
+        )}
+        {mgrOk && <Badge tone="success">Adjustment authorised by Sales Manager</Badge>}
+        {missing && <p className="text-sm text-destructive">Fix missing prices or quantities before approving.</p>}
         <button
-          disabled={locked || needsMgr || n <= 0}
+          disabled={locked || needsMgr || missing || n <= 0}
           className={`${btnPrimary} w-full`}
-          onClick={() => { upd((x) => ({ ...x, approvedPrice: n, approvedBy: role })); next(); }}
+          onClick={() => { upd((x) => ({ ...x, approvedPrice: n, approvedBy: mgrOk ? "manager (PIN)" : role })); next(); }}
         >
           Approve price & continue
         </button>
