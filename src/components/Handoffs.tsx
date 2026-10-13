@@ -52,7 +52,7 @@ export function GhlPanel({ p, c, upd }: { p: Project; c: Customer; upd: Upd }) {
     upd((x) => ({
       ...x,
       ops: { ...(x.ops ?? defaultOps()), depositStatus: "Received" },
-      ghl: x.ghl && { ...x.ghl, stage: "Deposit Received", log: [...x.ghl.log, { at: now(), action: "Webhook received", ok: true, detail: "OpportunityStageUpdate → Deposit Received; SunVault deposit status updated" }] },
+      ...(x.ghl && { ghl: { ...x.ghl, stage: "Deposit Received", log: [...x.ghl.log, { at: now(), action: "Webhook received", ok: true, detail: "OpportunityStageUpdate → Deposit Received; SunVault deposit status updated" }] } }),
     }));
 
   const rows: [string, string, string, string][] = [

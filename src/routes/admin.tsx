@@ -59,7 +59,7 @@ function AdminPage() {
                 <Item k="Travel / mile" v={money(b.rates.travelPerMile)} />
                 <Item k="Margin rules" v={`×${b.markup} · floor ${b.rates.marginFloorPct}%`} />
                 <Item k="Deposit default" v={`${b.rates.depositPct}%`} />
-                <Item k="Zip-Track / sq ft" v={money(b.seriesPerSqFt.zip ?? 0)} />
+                <Item k="Zip-Track / sq ft" v={money(b.seriesPerSqFt["zip"] ?? 0)} />
               </dl>
               <div className="flex gap-2">
                 {b.status === "Draft" && <button className={btnPrimary} onClick={() => publish(b)}>Publish as active</button>}
