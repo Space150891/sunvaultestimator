@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as ValidationRouteImport } from './routes/validation'
@@ -18,6 +19,11 @@ import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projec
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CustomersRoute = CustomersRouteImport.update({
@@ -43,6 +49,7 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/customers': typeof CustomersRoute
   '/roadmap': typeof RoadmapRoute
   '/validation': typeof ValidationRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/customers': typeof CustomersRoute
   '/roadmap': typeof RoadmapRoute
   '/validation': typeof ValidationRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/customers': typeof CustomersRoute
   '/roadmap': typeof RoadmapRoute
   '/validation': typeof ValidationRoute
@@ -66,12 +75,24 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/customers' | '/roadmap' | '/validation' | '/projects/$projectId'
+    | '/'
+    | '/admin'
+    | '/customers'
+    | '/roadmap'
+    | '/validation'
+    | '/projects/$projectId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/customers' | '/roadmap' | '/validation' | '/projects/$projectId'
+  to:
+    | '/'
+    | '/admin'
+    | '/customers'
+    | '/roadmap'
+    | '/validation'
+    | '/projects/$projectId'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/customers'
     | '/roadmap'
     | '/validation'
@@ -80,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   CustomersRoute: typeof CustomersRoute
   RoadmapRoute: typeof RoadmapRoute
   ValidationRoute: typeof ValidationRoute
@@ -93,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/customers': {
@@ -128,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   CustomersRoute: CustomersRoute,
   RoadmapRoute: RoadmapRoute,
   ValidationRoute: ValidationRoute,
