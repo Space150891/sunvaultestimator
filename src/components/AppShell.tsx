@@ -9,6 +9,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { to: "/", label: "Projects" },
     { to: "/customers", label: "Customers" },
     ...(canManage(role) ? [{ to: "/validation", label: "Pricing validation" }] : []),
+    ...(role === "admin" ? [{ to: "/admin", label: "Admin" }] : []),
     { to: "/roadmap", label: "Roadmap" },
   ] as const;
   return (

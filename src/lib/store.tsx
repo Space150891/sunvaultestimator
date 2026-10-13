@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { CUSTOMERS, PROJECTS, PRICE_BOOKS, type Customer, type Project, type Role } from "./demo-data";
+import { CUSTOMERS, PROJECTS, PRICE_BOOKS, type Customer, type PriceBook, type Project, type Role } from "./demo-data";
 
 type Store = {
   role: Role;
@@ -9,6 +9,10 @@ type Store = {
   projects: Project[];
   addProject: (customerId: string, name: string) => Project;
   updateProject: (id: string, fn: (p: Project) => Project) => void;
+  books: PriceBook[];
+  setBooks: React.Dispatch<React.SetStateAction<PriceBook[]>>;
+  qbTrigger: string;
+  setQbTrigger: (v: string) => void;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -17,6 +21,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>("rep");
   const [customers, setCustomers] = useState(CUSTOMERS);
   const [projects, setProjects] = useState(PROJECTS);
+  const [books, setBooks] = useState(PRICE_BOOKS);
+  const [qbTrigger, setQbTrigger] = useState("manual");
 
   const addCustomer: Store["addCustomer"] = (c) => {
     const nc = { ...c, id: "c" + Date.now() };
@@ -25,13 +31,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
   const addProject: Store["addProject"] = (customerId, name) => {
     const cust = customers.find((c) => c.id === customerId);
-    const book = PRICE_BOOKS.find((b) => b.current && b.state === cust?.state) ?? PRICE_BOOKS[0]!;
+    const book = books.find((b) => b.status === "Active" && b.state === cust?.state) ?? books[0]!;
     const p: Project = {
       id: "p" + Date.now(),
       customerId,
       name,
       priceBookId: book.id,
       approvedPrice: null,
+      rep: "Jordan Reyes",
       proposals: [],
       openings: [{ id: "o" + Date.now(), name: "Opening 1", widthIn: 144, heightIn: 96, series: "zip", fabric: "sol90", motor: "rts", housing: "square", addons: [] }],
     };
@@ -40,7 +47,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
   const updateProject: Store["updateProject"] = (id, fn) => setProjects((l) => l.map((p) => (p.id === id ? fn(p) : p)));
 
-  return <Ctx.Provider value={{ role, setRole, customers, addCustomer, projects, addProject, updateProject }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ role, setRole, customers, addCustomer, projects, addProject, updateProject, books, setBooks, qbTrigger, setQbTrigger }}>{children}</Ctx.Provider>;
 }
 
 export function useStore() {

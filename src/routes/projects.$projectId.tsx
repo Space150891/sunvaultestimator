@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Badge, btnOutline, btnPrimary, card, input } from "@/components/AppShell";
-import { ADDONS, FABRICS, HOUSINGS, MOTORS, PRICE_BOOKS, SERIES, type Opening, type Option, type Project } from "@/lib/demo-data";
+import { ADDONS, FABRICS, HOUSINGS, MOTORS, SERIES, type Opening, type Option, type Project } from "@/lib/demo-data";
 import { buildSnapshot, money } from "@/lib/pricing";
 import { canManage, useStore } from "@/lib/store";
+import { GhlPanel, OpsPanel } from "@/components/Handoffs";
 
 export const Route = createFileRoute("/projects/$projectId")({
   head: () => ({
@@ -17,17 +18,17 @@ export const Route = createFileRoute("/projects/$projectId")({
   component: ProjectPage,
 });
 
-const STEPS = ["Estimator", "Price approval", "Proposal", "Signature", "GoHighLevel"] as const;
+const STEPS = ["Estimator", "Price approval", "Proposal", "Signature", "GoHighLevel", "Operations"] as const;
 const DISCOUNT_LIMIT = 0.1;
 
 function ProjectPage() {
   const { projectId } = Route.useParams();
-  const { projects, customers, updateProject, role } = useStore();
+  const { projects, customers, updateProject, role, books } = useStore();
   const p = projects.find((x) => x.id === projectId);
   const [step, setStep] = useState<(typeof STEPS)[number]>("Estimator");
   if (!p) return <p className={card}>Project not found. <Link to="/" className="text-primary underline">Back to projects</Link></p>;
   const c = customers.find((x) => x.id === p.customerId)!;
-  const book = PRICE_BOOKS.find((b) => b.id === p.priceBookId)!;
+  const book = books.find((b) => b.id === p.priceBookId)!;
   const live = buildSnapshot(p.openings, book, p.approvedPrice);
   const last = p.proposals[p.proposals.length - 1];
   const locked = !!last?.signature;
@@ -43,7 +44,8 @@ function ProjectPage() {
             value={p.name}
             onChange={(e) => upd((x) => ({ ...x, name: e.target.value }))}
           />
-          <p className="text-muted-foreground">{c.name} · {c.address}, {c.state} · {c.phone}</p>
+          <p className="text-muted-foreground">{c.name} · {c.address}, {c.state} · {c.phone} · Rep: {p.rep}</p>
+          <p className="font-mono text-xs text-muted-foreground">SunVault {p.id} · customer {c.id}{p.ghl?.opportunityId ? ` · GHL ${p.ghl.opportunityId}` : ""}</p>
         </div>
         <label className="text-sm">
           <span className="block text-xs text-muted-foreground">Price book {canManage(role) ? "" : "(manager can change)"}</span>
@@ -53,7 +55,7 @@ function ProjectPage() {
             value={p.priceBookId}
             onChange={(e) => upd((x) => ({ ...x, priceBookId: e.target.value, approvedPrice: null }))}
           >
-            {PRICE_BOOKS.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            {books.filter((b) => b.status !== "Draft").map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </label>
       </div>
@@ -76,7 +78,8 @@ function ProjectPage() {
       {step === "Price approval" && <Approval p={p} locked={locked} upd={upd} live={live} role={role} next={() => setStep("Proposal")} />}
       {step === "Proposal" && <Proposal p={p} c={c} upd={upd} live={live} locked={locked} next={() => setStep("Signature")} />}
       {step === "Signature" && <Signature p={p} upd={upd} next={() => setStep("GoHighLevel")} />}
-      {step === "GoHighLevel" && <Ghl p={p} c={c} upd={upd} />}
+      {step === "GoHighLevel" && <GhlPanel p={p} c={c} upd={upd} />}
+      {step === "Operations" && <OpsPanel p={p} c={c} upd={upd} />}
     </div>
   );
 }
@@ -306,27 +309,3 @@ function Signature({ p, upd, next }: { p: Project; upd: Upd; next: () => void })
   );
 }
 
-function Ghl({ p, c, upd }: { p: Project; c: { name: string; email: string; phone: string }; upd: Upd }) {
-  const last = p.proposals[p.proposals.length - 1];
-  if (!last?.signature) return <p className={card}>The proposal must be signed before handoff.</p>;
-  const payload = {
-    contact: { name: c.name, email: c.email, phone: c.phone },
-    opportunity: { name: p.name, stage: "Closed Won — Pending Fabrication", monetaryValue: last.snapshot.approved },
-    proposal: { version: last.version, priceBook: last.snapshot.priceBookName, signedBy: last.signature.name, signedAt: last.signature.at },
-  };
-  return (
-    <div className={`${card} space-y-4`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-semibold">GoHighLevel handoff</h2>
-        {last.ghlSyncedAt ? <Badge tone="success">Sent {new Date(last.ghlSyncedAt).toLocaleTimeString()} (simulated)</Badge> : <Badge>Not sent</Badge>}
-      </div>
-      <pre className="overflow-x-auto rounded-md bg-sidebar p-4 text-xs text-sidebar-foreground">{JSON.stringify(payload, null, 2)}</pre>
-      <div className="flex flex-wrap gap-2">
-        <button disabled={!!last.ghlSyncedAt} className={btnPrimary} onClick={() => upd((x) => ({ ...x, proposals: x.proposals.map((v, i) => (i === x.proposals.length - 1 ? { ...v, ghlSyncedAt: new Date().toISOString() } : v)) }))}>
-          Send to GoHighLevel (demo)
-        </button>
-        <span className="flex items-center gap-2 text-sm text-muted-foreground"><Badge tone="primary">Week 4 preview</Badge> QuickBooks handoff</span>
-      </div>
-    </div>
-  );
-}
