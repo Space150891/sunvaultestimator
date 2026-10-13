@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Badge, btnOutline, btnPrimary, card, input } from "@/components/AppShell";
-import { ADDONS, FABRICS, HOUSINGS, MOTORS, PRICE_BOOKS, SERIES, type Opening, type Option, type Project } from "@/lib/demo-data";
+import { ADDONS, FABRICS, HOUSINGS, MOTORS, SERIES, type Opening, type Option, type Project } from "@/lib/demo-data";
 import { buildSnapshot, money } from "@/lib/pricing";
 import { canManage, useStore } from "@/lib/store";
 
@@ -22,12 +22,12 @@ const DISCOUNT_LIMIT = 0.1;
 
 function ProjectPage() {
   const { projectId } = Route.useParams();
-  const { projects, customers, updateProject, role } = useStore();
+  const { projects, customers, updateProject, role, books } = useStore();
   const p = projects.find((x) => x.id === projectId);
   const [step, setStep] = useState<(typeof STEPS)[number]>("Estimator");
   if (!p) return <p className={card}>Project not found. <Link to="/" className="text-primary underline">Back to projects</Link></p>;
   const c = customers.find((x) => x.id === p.customerId)!;
-  const book = PRICE_BOOKS.find((b) => b.id === p.priceBookId)!;
+  const book = books.find((b) => b.id === p.priceBookId)!;
   const live = buildSnapshot(p.openings, book, p.approvedPrice);
   const last = p.proposals[p.proposals.length - 1];
   const locked = !!last?.signature;
@@ -53,7 +53,7 @@ function ProjectPage() {
             value={p.priceBookId}
             onChange={(e) => upd((x) => ({ ...x, priceBookId: e.target.value, approvedPrice: null }))}
           >
-            {PRICE_BOOKS.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            {books.filter((b) => b.status !== "Draft").map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </label>
       </div>

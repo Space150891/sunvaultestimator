@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Badge, card } from "@/components/AppShell";
-import { PRICE_BOOKS } from "@/lib/demo-data";
 import { buildSnapshot, money } from "@/lib/pricing";
 import { useStore } from "@/lib/store";
 
@@ -26,7 +25,7 @@ export function projectStatus(p: { approvedPrice: number | null; proposals: { ve
 }
 
 function ProjectsPage() {
-  const { projects, customers } = useStore();
+  const { projects, customers, books } = useStore();
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -41,7 +40,7 @@ function ProjectsPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         {projects.map((p) => {
           const c = customers.find((x) => x.id === p.customerId);
-          const book = PRICE_BOOKS.find((b) => b.id === p.priceBookId)!;
+          const book = books.find((b) => b.id === p.priceBookId)!;
           const snap = buildSnapshot(p.openings, book, p.approvedPrice);
           const st = projectStatus(p);
           return (

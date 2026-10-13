@@ -43,7 +43,11 @@ export type PriceBook = {
   id: string;
   name: string;
   state: "UT" | "AZ";
-  current: boolean;
+  status: "Draft" | "Active" | "Archived";
+  effectiveDate: string;
+  createdBy: string;
+  // Display-only demo rate groups (production values come from Excel workbooks)
+  rates: { pole: number; footing: number; hardware: number; equipment: number; travelPerMile: number; marginFloorPct: number; depositPct: number };
   seriesPerSqFt: Record<string, number>;
   fabricMult: Record<string, number>;
   motor: Record<string, number>;
@@ -53,6 +57,7 @@ export type PriceBook = {
   freightPct: number;
   markup: number; // recommended price = cost * markup
 };
+const rates = { pole: 310, footing: 185, hardware: 95, equipment: 150, travelPerMile: 2.1, marginFloorPct: 35, depositPct: 30 };
 
 const base = {
   seriesPerSqFt: { zip: 28, cable: 16, pergola: 24 },
@@ -63,9 +68,9 @@ const base = {
 };
 
 export const PRICE_BOOKS: PriceBook[] = [
-  { id: "ut-2026-10", name: "Utah — October 2026", state: "UT", current: true, ...base, laborPerOpening: 380, freightPct: 0.04, markup: 1.9 },
-  { id: "az-2026-10", name: "Arizona — October 2026", state: "AZ", current: true, ...base, seriesPerSqFt: { zip: 29.5, cable: 17, pergola: 25 }, laborPerOpening: 420, freightPct: 0.06, markup: 1.85 },
-  { id: "ut-prev", name: "Utah — Previous Version", state: "UT", current: false, ...base, seriesPerSqFt: { zip: 26, cable: 15, pergola: 22 }, laborPerOpening: 350, freightPct: 0.04, markup: 1.9 },
+  { id: "ut-2026-10", name: "Utah — October 2026", state: "UT", status: "Active", effectiveDate: "2026-10-01", createdBy: "A. Admin", rates, ...base, laborPerOpening: 380, freightPct: 0.04, markup: 1.9 },
+  { id: "az-2026-10", name: "Arizona — October 2026", state: "AZ", status: "Active", effectiveDate: "2026-10-01", createdBy: "A. Admin", rates: { ...rates, travelPerMile: 2.4 }, ...base, seriesPerSqFt: { zip: 29.5, cable: 17, pergola: 25 }, laborPerOpening: 420, freightPct: 0.06, markup: 1.85 },
+  { id: "ut-prev", name: "Utah — Previous Version", state: "UT", status: "Archived", effectiveDate: "2026-04-01", createdBy: "A. Admin", rates, ...base, seriesPerSqFt: { zip: 26, cable: 15, pergola: 22 }, laborPerOpening: 350, freightPct: 0.04, markup: 1.9 },
 ];
 
 export type Customer = {
@@ -121,6 +126,9 @@ export type Project = {
   openings: Opening[];
   approvedPrice: number | null;
   approvedBy?: string;
+  rep: string;
+  ops?: OpsHandoff;
+  ghl?: GhlState;
   proposals: ProposalVersion[];
 };
 
@@ -131,6 +139,7 @@ export const PROJECTS: Project[] = [
     name: "Back patio enclosure",
     priceBookId: "ut-2026-10",
     approvedPrice: null,
+    rep: "Jordan Reyes",
     proposals: [],
     openings: [
       { id: "o1", name: "South patio main span", widthIn: 192, heightIn: 108, series: "zip", fabric: "sol95", motor: "rts", housing: "square", addons: ["wind"] },
@@ -143,6 +152,7 @@ export const PROJECTS: Project[] = [
     name: "Pool cabana shades",
     priceBookId: "az-2026-10",
     approvedPrice: null,
+    rep: "Jordan Reyes",
     proposals: [],
     openings: [
       { id: "o3", name: "Cabana front", widthIn: 144, heightIn: 96, series: "cable", fabric: "sol90", motor: "manual", housing: "open", addons: [] },
@@ -157,3 +167,15 @@ export const VALIDATION = [
   { project: "Sunridge Pergola Package", excel: 21940.1, app: 21940.1 },
   { project: "Chandler Office Courtyard", excel: 27118.75, app: 27118.74 },
 ];
+
+export type OpsStatus = "Not sent" | "Handoff Received" | "Measurements Need Review" | "Ready for Engineering" | "Ready for Fabrication";
+export type OpsHandoff = {
+  sails: number; poles: number; wallMounts: number; footings: number; hardware: string;
+  specialConditions: string; depositStatus: "Not requested" | "Requested" | "Received";
+  requiredDate: string; notes: string; status: OpsStatus;
+};
+export type GhlLog = { at: string; action: string; ok: boolean; detail: string };
+export type GhlState = { contactId?: string; opportunityId?: string; userId: string; stage: string; log: GhlLog[]; failed?: boolean };
+export const GHL_USERS: Record<string, string> = { "Jordan Reyes": "ghl_usr_7Hq2Lx", "Taylor Brooks": "ghl_usr_3Mn8Pz" };
+// Demo: contacts that already exist in GoHighLevel (by email)
+export const GHL_EXISTING: Record<string, string> = { "megan.holloway@example.com": "ghl_ct_9XkP2m" };
