@@ -16,8 +16,8 @@ export const Route = createFileRoute("/roadmap")({
 const ORDER = ["Estimate and pricing engine", "Proposal and PDF", "Customer signature", "GoHighLevel handoff", "Basic Operations package", "QuickBooks handoff", "Advanced operational modules later"];
 
 const groups = [
-  { title: "Three-week core", tone: "success" as const, tag: "In this prototype", items: ["Customer with duplicate check", "Project with state price book", "Complete estimator", "Approved price", "PDF proposal", "Customer signature", "GoHighLevel handoff", "Basic Operations handoff page"] },
-  { title: "Fourth-week additions", tone: "primary" as const, tag: "Preview — week 4", items: ["Mature admin pricing", "QuickBooks handoff (subject to QuickBooks product, API access and accounting workflow confirmation)", "Stronger regression testing", "Production hardening", "Training and handover"] },
+  { title: "Three-week core", tone: "success" as const, tag: "In this prototype", items: ["Customer with duplicate check", "Multiple projects per customer", "Unlimited sails, poles, mounts & footings", "Manager price approval", "Project with state price book", "Complete estimator", "Approved price", "PDF proposal", "Customer signature", "GoHighLevel handoff", "Basic Operations handoff page"] },
+  { title: "Fourth-week additions", tone: "primary" as const, tag: "Preview — week 4", items: ["Mature admin pricing", "QuickBooks handoff (subject to QuickBooks product, API access and accounting workflow confirmation)", "Pricing-validation report", "Offline recovery demo", "Stronger regression testing", "Production hardening", "Training and handover"] },
   { title: "Phase 2", tone: "muted" as const, tag: "Preview — Phase 2", items: ["Advanced operations scheduling", "Detailed fabrication scheduling", "Installation calendars", "Crew management", "Fabrication tracking", "Installation crew scheduling", "Inventory", "Online deposit payments", "CAD/rendering automation", "Permit and engineering workflows", "Management analytics"] },
 ];
 

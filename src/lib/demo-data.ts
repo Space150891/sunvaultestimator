@@ -47,7 +47,7 @@ export type PriceBook = {
   effectiveDate: string;
   createdBy: string;
   // Display-only demo rate groups (production values come from Excel workbooks)
-  rates: { pole: number; footing: number; hardware: number; equipment: number; travelPerMile: number; marginFloorPct: number; depositPct: number };
+  rates: { sailPerSqFt: number; sailInstall: number; pole: number; polePerFt: number; mount: number; footing: number; hardware: number; equipment: number; travelPerMile: number; marginFloorPct: number; depositPct: number };
   seriesPerSqFt: Record<string, number>;
   fabricMult: Record<string, number>;
   motor: Record<string, number>;
@@ -57,7 +57,7 @@ export type PriceBook = {
   freightPct: number;
   markup: number; // recommended price = cost * markup
 };
-const rates = { pole: 310, footing: 185, hardware: 95, equipment: 150, travelPerMile: 2.1, marginFloorPct: 35, depositPct: 30 };
+const rates = { sailPerSqFt: 9.5, sailInstall: 240, polePerFt: 22, mount: 85, pole: 310, footing: 185, hardware: 95, equipment: 150, travelPerMile: 2.1, marginFloorPct: 35, depositPct: 30 };
 
 const base = {
   seriesPerSqFt: { zip: 28, cable: 16, pergola: 24 },
@@ -101,10 +101,23 @@ export type Opening = {
   addons: string[];
 };
 
+export type ComponentKind = "sail" | "pole" | "mount" | "footing" | "hardware";
+export type Component = {
+  id: string;
+  kind: ComponentKind;
+  label: string;
+  qty: number;
+  sqft?: number; // sails
+  fabric?: string; // sails
+  heightFt?: number; // poles
+  unitOverride?: number; // hardware with a custom price (no price-book rate)
+};
+export const KIND_LABEL: Record<ComponentKind, string> = { sail: "Sail", pole: "Pole", mount: "Wall mount", footing: "Footing", hardware: "Hardware kit" };
+
 export type PriceSnapshot = {
   priceBookId: string;
   priceBookName: string;
-  lines: { name: string; detail: string; cost: number; recommended: number }[];
+  lines: { name: string; detail: string; cost: number; recommended: number; formula?: string; missing?: boolean }[];
   internalCost: number;
   recommended: number;
   approved: number;
@@ -124,6 +137,7 @@ export type Project = {
   name: string;
   priceBookId: string;
   openings: Opening[];
+  components: Component[];
   approvedPrice: number | null;
   approvedBy?: string;
   rep: string;
@@ -138,6 +152,7 @@ export const PROJECTS: Project[] = [
     customerId: "c1",
     name: "Back patio enclosure",
     priceBookId: "ut-2026-10",
+    components: [],
     approvedPrice: null,
     rep: "Jordan Reyes",
     proposals: [],
@@ -149,8 +164,16 @@ export const PROJECTS: Project[] = [
   {
     id: "p2",
     customerId: "c2",
-    name: "Pool cabana shades",
+    name: "Pool cabana shade sails",
     priceBookId: "az-2026-10",
+    components: [
+      { id: "k1", kind: "sail", label: "Pool sail A (hypar)", qty: 1, sqft: 320, fabric: "sol95" },
+      { id: "k2", kind: "sail", label: "Pool sail B", qty: 1, sqft: 260, fabric: "sol95" },
+      { id: "k3", kind: "pole", label: "Steel pole 4\"", qty: 4, heightFt: 14 },
+      { id: "k4", kind: "mount", label: "Fascia wall mount", qty: 2 },
+      { id: "k5", kind: "footing", label: "Concrete footing 24\"×60\"", qty: 4 },
+      { id: "k6", kind: "hardware", label: "Turnbuckle & shackle kit", qty: 6 },
+    ],
     approvedPrice: null,
     rep: "Jordan Reyes",
     proposals: [],
@@ -160,13 +183,30 @@ export const PROJECTS: Project[] = [
   },
 ];
 
-export const VALIDATION = [
-  { project: "Holbrook Residence (2025)", excel: 14862.4, app: 14862.4 },
-  { project: "Mesa Verde HOA Clubhouse", excel: 38410.0, app: 38410.0 },
-  { project: "Larkin Patio Enclosure", excel: 9275.55, app: 9275.56 },
-  { project: "Sunridge Pergola Package", excel: 21940.1, app: 21940.1 },
-  { project: "Chandler Office Courtyard", excel: 27118.75, app: 27118.74 },
+export type HistoricalProject = { project: string; bookId: string; components: Component[]; excelOffset: number; override?: { amount: number; approved: boolean } };
+const sails = (a: number, b: number): Component[] => [
+  { id: "h1", kind: "sail", label: "Sail 1", qty: 1, sqft: a, fabric: "sol90" },
+  { id: "h2", kind: "sail", label: "Sail 2", qty: 1, sqft: b, fabric: "sol95" },
+  { id: "h3", kind: "pole", label: "Steel pole", qty: 3, heightFt: 12 },
+  { id: "h4", kind: "mount", label: "Wall mount", qty: 3 },
+  { id: "h5", kind: "footing", label: "Concrete footing", qty: 3 },
+  { id: "h6", kind: "hardware", label: "Hardware kit", qty: 6 },
 ];
+// Fictional history. excelOffset = demo difference between the spreadsheet total and the app total.
+export const HISTORICAL: HistoricalProject[] = [
+  { project: "Holbrook Residence (2025)", bookId: "ut-prev", components: sails(210, 180), excelOffset: 0 },
+  { project: "Mesa Verde HOA Clubhouse", bookId: "az-2026-10", components: sails(520, 480), excelOffset: 0.4 },
+  { project: "Larkin Backyard Sails", bookId: "ut-2026-10", components: sails(150, 140), excelOffset: -0.01 },
+  { project: "Sunridge Playground", bookId: "ut-2026-10", components: [...sails(300, 280), { id: "h7", kind: "hardware", label: "Custom gate bracket (no rate)", qty: 2 }], excelOffset: 0 },
+  { project: "Chandler Office Courtyard", bookId: "az-2026-10", components: sails(400, 0), excelOffset: 0 },
+  { project: "Kaysville Patio (discounted)", bookId: "ut-2026-10", components: sails(180, 160), excelOffset: 0, override: { amount: -500, approved: false } },
+];
+
+export const APPOINTMENTS = [
+  { time: "10:00 AM", name: "Carla Nguyen", email: "carla.nguyen@example.com", phone: "801-555-0175", address: "77 S Willow Bend, Sandy", state: "UT" as const, note: "New lead — backyard shade sails" },
+  { time: "2:30 PM", name: "Dan Ortiz", email: "dan.ortiz@example.com", phone: "480-555-0187", address: "8821 N Saguaro Ln, Scottsdale", state: "AZ" as const, note: "Referral — may already be a customer" },
+];
+
 
 export type OpsStatus = "Not sent" | "Handoff Received" | "Measurements Need Review" | "Ready for Engineering" | "Ready for Fabrication";
 export type OpsHandoff = {

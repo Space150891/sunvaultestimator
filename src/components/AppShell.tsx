@@ -4,7 +4,7 @@ import { ROLE_LABEL, type Role } from "@/lib/demo-data";
 import { canManage, useStore } from "@/lib/store";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { role, setRole } = useStore();
+  const { role, setRole, restored, resetDemo } = useStore();
   const nav = [
     { to: "/", label: "Projects" },
     { to: "/customers", label: "Customers" },
@@ -15,7 +15,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-accent px-4 py-1 text-center text-xs font-medium text-accent-foreground">
-        Prototype · fictional demonstration prices and data only
+        Prototype · fictional demonstration prices and data only · work is saved on this tablet{restored ? " (restored after reload)" : ""} ·{" "}
+        <button className="underline" onClick={resetDemo}>Reset demo</button>
       </div>
       <header className="sticky top-0 z-20 border-b bg-sidebar text-sidebar-foreground">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
