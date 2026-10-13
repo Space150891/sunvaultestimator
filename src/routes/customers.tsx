@@ -13,6 +13,13 @@ export const Route = createFileRoute("/customers")({
       { property: "og:description", content: "Find or add a customer with duplicate checking before GoHighLevel sync." },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { name?: string; email?: string; phone?: string; address?: string; state?: "UT" | "AZ" } => ({
+    ...(typeof s.name === "string" ? { name: s.name } : {}),
+    ...(typeof s.email === "string" ? { email: s.email } : {}),
+    ...(typeof s.phone === "string" ? { phone: s.phone } : {}),
+    ...(typeof s.address === "string" ? { address: s.address } : {}),
+    ...(s.state === "UT" || s.state === "AZ" ? { state: s.state } : {}),
+  }),
   component: CustomersPage,
 });
 
@@ -33,12 +40,13 @@ function CustomersPage() {
   const { customers, addCustomer, addProject, projects } = useStore();
   const nav = useNavigate();
   const [q, setQ] = useState("");
-  const [form, setForm] = useState(empty);
-  const [showForm, setShowForm] = useState(false);
+  const appt = Route.useSearch();
+  const [form, setForm] = useState({ ...empty, ...appt });
+  const [showForm, setShowForm] = useState(!!appt.name);
   const [matches, setMatches] = useState<Customer[] | null>(null);
 
   const startProject = (c: Customer) => {
-    const p = addProject(c.id, "New shade project");
+    const p = addProject(c.id, "Shade sail project");
     nav({ to: "/projects/$projectId", params: { projectId: p.id } });
   };
   const create = () => {

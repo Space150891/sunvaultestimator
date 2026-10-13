@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { CUSTOMERS, PROJECTS, PRICE_BOOKS, type Customer, type PriceBook, type Project, type Role } from "./demo-data";
 
 type Store = {
@@ -13,7 +13,10 @@ type Store = {
   setBooks: React.Dispatch<React.SetStateAction<PriceBook[]>>;
   qbTrigger: string;
   setQbTrigger: (v: string) => void;
+  restored: boolean;
+  resetDemo: () => void;
 };
+const KEY = "sunvault-demo-v2";
 
 const Ctx = createContext<Store | null>(null);
 
@@ -23,6 +26,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState(PROJECTS);
   const [books, setBooks] = useState(PRICE_BOOKS);
   const [qbTrigger, setQbTrigger] = useState("manual");
+  const [restored, setRestored] = useState(false);
+  const loaded = useRef(false);
+  // Offline recovery demo: work survives reloads and lost connection on the tablet.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        setCustomers(d.customers); setProjects(d.projects); setBooks(d.books); setQbTrigger(d.qbTrigger); setRole(d.role);
+        setRestored(true);
+      }
+    } catch { /* ignore corrupt demo state */ }
+    loaded.current = true;
+  }, []);
+  useEffect(() => {
+    if (loaded.current) localStorage.setItem(KEY, JSON.stringify({ customers, projects, books, qbTrigger, role }));
+  }, [customers, projects, books, qbTrigger, role]);
+  const resetDemo = () => { localStorage.removeItem(KEY); window.location.reload(); };
 
   const addCustomer: Store["addCustomer"] = (c) => {
     const nc = { ...c, id: "c" + Date.now() };
@@ -40,14 +61,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       approvedPrice: null,
       rep: "Jordan Reyes",
       proposals: [],
-      openings: [{ id: "o" + Date.now(), name: "Opening 1", widthIn: 144, heightIn: 96, series: "zip", fabric: "sol90", motor: "rts", housing: "square", addons: [] }],
+      openings: [],
+      components: [],
     };
     setProjects((l) => [p, ...l]);
     return p;
   };
   const updateProject: Store["updateProject"] = (id, fn) => setProjects((l) => l.map((p) => (p.id === id ? fn(p) : p)));
 
-  return <Ctx.Provider value={{ role, setRole, customers, addCustomer, projects, addProject, updateProject, books, setBooks, qbTrigger, setQbTrigger }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ role, setRole, customers, addCustomer, projects, addProject, updateProject, books, setBooks, qbTrigger, setQbTrigger, restored, resetDemo }}>{children}</Ctx.Provider>;
 }
 
 export function useStore() {
