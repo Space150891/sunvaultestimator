@@ -25,7 +25,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
   const addProject: Store["addProject"] = (customerId, name) => {
     const cust = customers.find((c) => c.id === customerId);
-    const book = PRICE_BOOKS.find((b) => b.current && b.state === cust?.state) ?? PRICE_BOOKS[0];
+    const book = PRICE_BOOKS.find((b) => b.current && b.state === cust?.state) ?? PRICE_BOOKS[0]!;
     const p: Project = {
       id: "p" + Date.now(),
       customerId,
