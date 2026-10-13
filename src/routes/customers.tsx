@@ -116,7 +116,7 @@ function CustomersPage() {
               ))}
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              <button className={btnPrimary} onClick={() => { setMatches(null); setShowForm(false); setQ(matches[0].name); }}>Open Existing Customer</button>
+              <button className={btnPrimary} onClick={() => { setMatches(null); setShowForm(false); setQ(matches[0]?.name ?? ""); }}>Open Existing Customer</button>
               <button className={btnOutline} onClick={create}>Create New Anyway</button>
               <button className={btnOutline} onClick={() => setMatches(null)}>Cancel</button>
             </div>

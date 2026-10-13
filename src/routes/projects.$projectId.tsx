@@ -142,7 +142,7 @@ function Estimator({ p, locked, upd, live, next }: { p: Project; locked: boolean
           </div>
         ))}
         {!locked && (
-          <button className={btnOutline} onClick={() => upd((x) => ({ ...x, approvedPrice: null, openings: [...x.openings, { ...x.openings[x.openings.length - 1], id: "o" + Date.now(), name: `Opening ${x.openings.length + 1}`, addons: [] }] }))}>
+          <button className={btnOutline} onClick={() => upd((x) => ({ ...x, approvedPrice: null, openings: [...x.openings, { ...(x.openings[x.openings.length - 1] as Opening), id: "o" + Date.now(), name: `Opening ${x.openings.length + 1}`, addons: [] }] }))}>
             + Add opening
           </button>
         )}

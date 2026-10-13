@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
   component: ProjectsPage,
 });
 
-export function projectStatus(p: { approvedPrice: number | null; proposals: { signature?: unknown; ghlSyncedAt?: string }[] }) {
+export function projectStatus(p: { approvedPrice: number | null; proposals: { version: number; signature?: unknown; ghlSyncedAt?: string }[] }) {
   const last = p.proposals[p.proposals.length - 1];
   if (last?.ghlSyncedAt) return { label: "Sent to GoHighLevel", tone: "success" as const };
   if (last?.signature) return { label: "Signed", tone: "success" as const };
