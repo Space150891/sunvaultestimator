@@ -14,11 +14,11 @@ export const Route = createFileRoute("/customers")({
     ],
   }),
   validateSearch: (s: Record<string, unknown>): { name?: string; email?: string; phone?: string; address?: string; state?: "UT" | "AZ" } => ({
-    ...(typeof s.name === "string" ? { name: s.name } : {}),
-    ...(typeof s.email === "string" ? { email: s.email } : {}),
-    ...(typeof s.phone === "string" ? { phone: s.phone } : {}),
-    ...(typeof s.address === "string" ? { address: s.address } : {}),
-    ...(s.state === "UT" || s.state === "AZ" ? { state: s.state } : {}),
+    ...(typeof s["name"] === "string" ? { name: s["name"] } : {}),
+    ...(typeof s["email"] === "string" ? { email: s["email"] } : {}),
+    ...(typeof s["phone"] === "string" ? { phone: s["phone"] } : {}),
+    ...(typeof s["address"] === "string" ? { address: s["address"] } : {}),
+    ...(s["state"] === "UT" || s["state"] === "AZ" ? { state: s["state"] } : {}),
   }),
   component: CustomersPage,
 });

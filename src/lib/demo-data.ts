@@ -207,3 +207,15 @@ export const APPOINTMENTS = [
   { time: "2:30 PM", name: "Dan Ortiz", email: "dan.ortiz@example.com", phone: "480-555-0187", address: "8821 N Saguaro Ln, Scottsdale", state: "AZ" as const, note: "Referral — may already be a customer" },
 ];
 
+
+export type OpsStatus = "Not sent" | "Handoff Received" | "Measurements Need Review" | "Ready for Engineering" | "Ready for Fabrication";
+export type OpsHandoff = {
+  sails: number; poles: number; wallMounts: number; footings: number; hardware: string;
+  specialConditions: string; depositStatus: "Not requested" | "Requested" | "Received";
+  requiredDate: string; notes: string; status: OpsStatus;
+};
+export type GhlLog = { at: string; action: string; ok: boolean; detail: string };
+export type GhlState = { contactId?: string; opportunityId?: string; userId: string; stage: string; log: GhlLog[]; failed?: boolean };
+export const GHL_USERS: Record<string, string> = { "Jordan Reyes": "ghl_usr_7Hq2Lx", "Taylor Brooks": "ghl_usr_3Mn8Pz" };
+// Demo: contacts that already exist in GoHighLevel (by email)
+export const GHL_EXISTING: Record<string, string> = { "megan.holloway@example.com": "ghl_ct_9XkP2m" };
